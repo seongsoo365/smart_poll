@@ -1,4 +1,4 @@
-export type Round = 'group' | 'r16' | 'qf' | 'sf' | 'final'
+export type Round = 'group' | 'r32' | 'r16' | 'qf' | 'sf' | 'final'
 export type MatchStatus = 'scheduled' | 'in_progress' | 'completed'
 export type PredictedWinner = 'home' | 'draw' | 'away'
 export type UserRole = 'system_admin' | 'participant'
@@ -65,13 +65,14 @@ export type RankEntry = {
 
 export const ROUND_LABELS: Record<Round, string> = {
   group: '조별리그',
+  r32: '32강',
   r16: '16강',
   qf: '8강',
   sf: '준결승',
   final: '결승',
 }
 
-export const ROUNDS: Round[] = ['group', 'r16', 'qf', 'sf', 'final']
+export const ROUNDS: Round[] = ['group', 'r32', 'r16', 'qf', 'sf', 'final']
 
 // 스코어로 승무패 자동 판별
 export function getWinnerFromScore(homeScore: number, awayScore: number): PredictedWinner {

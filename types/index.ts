@@ -45,6 +45,13 @@ export type Prediction = {
   updated_at: string
 }
 
+export type PredictionWithUser = Prediction & {
+  user_profiles: {
+    name: string
+    avatar_url: string | null
+  } | null
+}
+
 export type ScoringRule = {
   id: string
   rule_type: 'winner' | 'exact_score'

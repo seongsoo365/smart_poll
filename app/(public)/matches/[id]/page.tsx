@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClientSafe } from '@/lib/supabase/server'
 import PredictionForm from '@/components/matches/PredictionForm'
 import PredictionStats from '@/components/matches/PredictionStats'
+import PredictionList from '@/components/matches/PredictionList'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Clock, MapPin, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -12,6 +13,7 @@ import {
   ROUND_LABELS,
   type Match,
   type Prediction,
+  type PredictionWithUser,
   type ScoringRules,
 } from '@/types'
 
@@ -71,13 +73,16 @@ export default async function MatchDetailPage({
     myPrediction = (data ?? undefined) as Prediction | undefined
   }
 
-  // 예측 통계 집계
-  const { data: predStats } = await supabase
+  // 전체 예측 목록 조회 (통계 + 개인 목록 겸용)
+  const { data: predData } = await supabase
     .from('predictions')
-    .select('predicted_winner')
+    .select('*, user_profiles(name, avatar_url)')
     .eq('match_id', id)
+    .order('created_at', { ascending: true })
 
-  const stats = (predStats ?? []).reduce(
+  const allPredictions = (predData ?? []) as PredictionWithUser[]
+
+  const stats = allPredictions.reduce(
     (acc, p) => {
       if (p.predicted_winner === 'home') acc.home += 1
       else if (p.predicted_winner === 'draw') acc.draw += 1
@@ -221,10 +226,15 @@ export default async function MatchDetailPage({
         </div>
       )}
 
-      {/* 예측 통계 */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">참가자 예측 현황</h2>
+      {/* 예측 통계 + 개인 목록 */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">참가자 예측 현황</h2>
         <PredictionStats match={match} stats={stats} />
+        <PredictionList
+          predictions={allPredictions}
+          match={match}
+          currentUserId={user?.id ?? null}
+        />
       </div>
     </div>
   )

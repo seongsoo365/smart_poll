@@ -13,6 +13,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 })
   }
 
+  // 승인 여부 확인
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('is_approved')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_approved) {
+    return NextResponse.json({ error: '관리자 승인 후 예측이 가능합니다' }, { status: 403 })
+  }
+
   const body = await request.json()
   const { matchId, predictedWinner, predictedHomeScore, predictedAwayScore } = body as {
     matchId: string

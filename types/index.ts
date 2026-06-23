@@ -8,6 +8,9 @@ export type UserProfile = {
   email: string
   name: string
   role: UserRole
+  is_approved: boolean
+  provider: string
+  avatar_url: string | null
   created_at: string
 }
 

@@ -8,8 +8,17 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && data.user) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('is_approved')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      if (!profile?.is_approved) {
+        return NextResponse.redirect(`${origin}/auth/pending`)
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

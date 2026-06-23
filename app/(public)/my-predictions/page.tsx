@@ -19,6 +19,15 @@ export default async function MyPredictionsPage() {
 
   if (!user) redirect('/auth/login')
 
+  // 미승인 사용자는 대기 페이지로
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('is_approved')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.is_approved) redirect('/auth/pending')
+
   const { data: predsRaw } = await supabase
     .from('predictions')
     .select('*, match:matches(*)')

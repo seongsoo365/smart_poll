@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import DeleteMatchButton from '@/components/admin/DeleteMatchButton'
+import TogglePredictionButton from '@/components/admin/TogglePredictionButton'
 import { Plus, Pencil, Trophy } from 'lucide-react'
 import { formatKickoffKST, ROUND_LABELS, type Match } from '@/types'
 
@@ -58,6 +59,7 @@ export default async function AdminMatchesPage() {
                 <TableHead>킥오프 (KST)</TableHead>
                 <TableHead className="text-center">상태</TableHead>
                 <TableHead className="text-center">예측 수</TableHead>
+                <TableHead className="text-center">예측 허용</TableHead>
                 <TableHead className="text-right">액션</TableHead>
               </TableRow>
             </TableHeader>
@@ -98,6 +100,17 @@ export default async function AdminMatchesPage() {
                     </TableCell>
                     <TableCell className="text-center text-sm">
                       {predCount}명
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <TogglePredictionButton
+                          matchId={match.id}
+                          isOpen={match.is_prediction_open}
+                        />
+                        {match.is_prediction_open && (
+                          <span className="text-xs font-medium text-green-400">예측중</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">

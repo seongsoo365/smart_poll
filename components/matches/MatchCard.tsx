@@ -51,6 +51,7 @@ export default function MatchCard({
   prediction?: Prediction
 }) {
   const locked = isMatchLocked(match)
+  const predictionOpen = match.is_prediction_open
 
   return (
     <Link href={`/matches/${match.id}`}>
@@ -103,11 +104,9 @@ export default function MatchCard({
           <div className="text-right text-xs">
             {prediction ? (
               <PredictionResult match={match} prediction={prediction} />
-            ) : (
-              !locked && match.status === 'scheduled' && (
-                <span className="text-primary">예측하기 →</span>
-              )
-            )}
+            ) : predictionOpen && !locked && match.status === 'scheduled' ? (
+              <span className="text-primary">예측하기 →</span>
+            ) : null}
           </div>
         </div>
       </div>

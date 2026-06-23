@@ -55,12 +55,16 @@ export async function POST(request: NextRequest) {
   // 경기 존재 및 마감 여부 확인
   const { data: match } = await supabase
     .from('matches')
-    .select('id, status, prediction_locked_at, kickoff_at')
+    .select('id, status, prediction_locked_at, kickoff_at, is_prediction_open')
     .eq('id', matchId)
     .single()
 
   if (!match) {
     return NextResponse.json({ error: '경기를 찾을 수 없습니다' }, { status: 404 })
+  }
+
+  if (!match.is_prediction_open) {
+    return NextResponse.json({ error: '관리자가 예측을 허용하지 않은 경기입니다' }, { status: 403 })
   }
 
   if (match.status === 'completed') {

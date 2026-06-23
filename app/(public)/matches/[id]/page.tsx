@@ -100,6 +100,7 @@ export default async function MatchDetailPage({
   }
 
   const locked = isMatchLocked(match)
+  const predictionOpen = match.is_prediction_open
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
@@ -195,16 +196,28 @@ export default async function MatchDetailPage({
       {/* 예측 폼 (미완료 경기) */}
       {match.status !== 'completed' && (
         <div className="mb-6">
-          <h2 className="mb-3 text-lg font-semibold">
-            {locked ? '🔒 예측 마감' : '✏️ 예측 입력'}
-          </h2>
-          <PredictionForm
-            match={match}
-            initialPrediction={myPrediction}
-            isLoggedIn={!!user}
-            isLocked={locked}
-            scoringRules={scoringRules}
-          />
+          {!predictionOpen ? (
+            <>
+              <h2 className="mb-3 text-lg font-semibold">✏️ 예측 입력</h2>
+              <div className="glass rounded-xl p-6 text-center text-muted-foreground">
+                <p className="text-sm">아직 관리자가 이 경기의 예측을 열지 않았습니다.</p>
+                <p className="mt-1 text-xs opacity-70">다른 경기의 예측을 먼저 진행해 주세요.</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="mb-3 text-lg font-semibold">
+                {locked ? '🔒 예측 마감' : '✏️ 예측 입력'}
+              </h2>
+              <PredictionForm
+                match={match}
+                initialPrediction={myPrediction}
+                isLoggedIn={!!user}
+                isLocked={locked}
+                scoringRules={scoringRules}
+              />
+            </>
+          )}
         </div>
       )}
 

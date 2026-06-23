@@ -1,4 +1,4 @@
-export type Round = 'group' | 'r32' | 'r16' | 'qf' | 'sf' | 'final'
+export type Round = 'group' | 'r32' | 'r16' | 'qf' | 'sf' | 'third_place' | 'final'
 export type MatchStatus = 'scheduled' | 'in_progress' | 'completed'
 export type PredictedWinner = 'home' | 'draw' | 'away'
 export type UserRole = 'system_admin' | 'participant'
@@ -29,6 +29,7 @@ export type Match = {
   home_score: number | null
   away_score: number | null
   prediction_locked_at: string | null
+  is_prediction_open: boolean
   created_at: string
 }
 
@@ -72,10 +73,11 @@ export const ROUND_LABELS: Record<Round, string> = {
   r16: '16강',
   qf: '8강',
   sf: '준결승',
+  third_place: '3위 결정전',
   final: '결승',
 }
 
-export const ROUNDS: Round[] = ['group', 'r32', 'r16', 'qf', 'sf', 'final']
+export const ROUNDS: Round[] = ['group', 'r32', 'r16', 'qf', 'sf', 'third_place', 'final']
 
 // 스코어로 승무패 자동 판별
 export function getWinnerFromScore(homeScore: number, awayScore: number): PredictedWinner {

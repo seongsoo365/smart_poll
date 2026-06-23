@@ -1,0 +1,23 @@
+# 의존성
+node_modules/
+
+# Next.js 빌드 결과물
+.next/
+out/
+
+# 환경 변수 (시크릿 포함)
+.env
+.env.local
+.env.*.local
+
+# 타입스크립트 빌드 캐시
+*.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

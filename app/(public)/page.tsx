@@ -1,19 +1,16 @@
 import Link from 'next/link'
 import { createClientSafe, supabaseConfigured } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Calendar, Trophy, TrendingUp } from 'lucide-react'
+import { Calendar, Trophy, TrendingUp, Vote } from 'lucide-react'
+import DateNav from '@/components/home/DateNav'
+import { type Match, type Prediction } from '@/types'
+import MatchCard from '@/components/matches/MatchCard'
 
-type Match = {
-  id: string
-  home_country_name: string
-  away_country_name: string
-  home_country_code: string
-  away_country_code: string
-  kickoff_at: string
-  round: string
-  group_name: string | null
-  status: string
+const TOURNAMENT_START = '2026-06-11'
+const TOURNAMENT_END = '2026-07-19'
+
+function todayKST(): string {
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10)
 }
 
 type RankEntry = {
@@ -23,81 +20,96 @@ type RankEntry = {
   correct_count: number
 }
 
-function getRoundLabel(round: string) {
-  const labels: Record<string, string> = {
-    group: '조별리그',
-    r16: '16강',
-    qf: '8강',
-    sf: '4강',
-    final: '결승',
-  }
-  return labels[round] ?? round
-}
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>
+}) {
+  const { date: rawDate } = await searchParams
 
-function formatKickoff(kickoffAt: string) {
-  return new Date(kickoffAt).toLocaleString('ko-KR', {
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Seoul',
-  })
-}
+  const today = todayKST()
+  const selectedDate =
+    rawDate && rawDate >= TOURNAMENT_START && rawDate <= TOURNAMENT_END
+      ? rawDate
+      : today >= TOURNAMENT_START && today <= TOURNAMENT_END
+        ? today
+        : TOURNAMENT_START
 
-export default async function HomePage() {
+  // 선택된 KST 날짜 → UTC 범위
+  const dayStartUTC = new Date(selectedDate + 'T00:00:00+09:00').toISOString()
+  const dayEndUTC   = new Date(selectedDate + 'T23:59:59+09:00').toISOString()
+
   const supabase = await createClientSafe()
 
-  let upcomingMatches: Match[] = []
+  let openMatches: Match[] = []
+  let myPredictions: Record<string, Prediction> = {}
   let topRankings: RankEntry[] = []
 
   if (supabase) {
-    const now = new Date().toISOString()
+    const [{ data: matchData }, predData] = await Promise.all([
+      supabase
+        .from('matches')
+        .select('*')
+        .eq('is_prediction_open', true)
+        .gte('kickoff_at', dayStartUTC)
+        .lte('kickoff_at', dayEndUTC)
+        .order('kickoff_at', { ascending: true }),
 
-    const { data: matches } = await supabase
-      .from('matches')
-      .select('id, home_country_name, away_country_name, home_country_code, away_country_code, kickoff_at, round, group_name, status')
-      .gte('kickoff_at', now)
-      .eq('status', 'scheduled')
-      .order('kickoff_at', { ascending: true })
-      .limit(3)
+      supabase
+        .from('predictions')
+        .select('user_id, points_earned, user_profiles(name)')
+        .not('points_earned', 'is', null),
+    ])
 
-    upcomingMatches = matches ?? []
+    openMatches = (matchData ?? []) as Match[]
 
-    // 누적 점수 집계 (서버에서 간단히 처리)
-    const { data: predData } = await supabase
-      .from('predictions')
-      .select('user_id, points_earned, user_profiles(name)')
-      .not('points_earned', 'is', null)
+    // 로그인 사용자의 내 예측 조회
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user && openMatches.length > 0) {
+      const { data: preds } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('match_id', openMatches.map((m) => m.id))
 
-    if (predData) {
-      const rankMap: Record<string, RankEntry> = {}
-      for (const row of predData) {
-        const profiles = row.user_profiles
-      const profile = Array.isArray(profiles) ? profiles[0] as { name: string } | undefined : profiles as { name: string } | null
-        if (!profile) continue
-        if (!rankMap[row.user_id]) {
-          rankMap[row.user_id] = {
-            user_id: row.user_id,
-            name: profile.name,
-            total_points: 0,
-            correct_count: 0,
-          }
-        }
-        rankMap[row.user_id].total_points += row.points_earned ?? 0
-        if ((row.points_earned ?? 0) > 0) rankMap[row.user_id].correct_count += 1
-      }
-      topRankings = Object.values(rankMap)
-        .sort((a, b) => b.total_points - a.total_points || b.correct_count - a.correct_count)
-        .slice(0, 3)
+      myPredictions = ((preds ?? []) as Prediction[]).reduce<Record<string, Prediction>>(
+        (acc, p) => ({ ...acc, [p.match_id]: p }),
+        {}
+      )
     }
+
+    // TOP 3 랭킹
+    const rows = predData.data ?? []
+    const rankMap: Record<string, RankEntry> = {}
+    for (const row of rows) {
+      const profiles = row.user_profiles
+      const profile = Array.isArray(profiles)
+        ? (profiles[0] as { name: string } | undefined)
+        : (profiles as { name: string } | null)
+      if (!profile) continue
+      if (!rankMap[row.user_id]) {
+        rankMap[row.user_id] = { user_id: row.user_id, name: profile.name, total_points: 0, correct_count: 0 }
+      }
+      rankMap[row.user_id].total_points += row.points_earned ?? 0
+      if ((row.points_earned ?? 0) > 0) rankMap[row.user_id].correct_count += 1
+    }
+    topRankings = Object.values(rankMap)
+      .sort((a, b) => b.total_points - a.total_points || b.correct_count - a.correct_count)
+      .slice(0, 3)
   }
 
   const medals = ['🥇', '🥈', '🥉']
 
+  const selectedLabel = new Date(selectedDate + 'T12:00:00Z').toLocaleDateString('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  })
+
   return (
     <div className="container mx-auto px-4 py-10">
-      {/* 히어로 섹션 */}
-      <section className="mb-12 text-center">
+      {/* 히어로 */}
+      <section className="mb-10 text-center">
         <div className="mb-4 text-6xl">🏆</div>
         <h1 className="mb-3 text-4xl font-bold tracking-tight">Smart Poll</h1>
         <p className="text-lg text-muted-foreground">
@@ -111,48 +123,48 @@ export default async function HomePage() {
       </section>
 
       <div className="grid gap-8 md:grid-cols-2">
-        {/* 예정된 경기 */}
+        {/* 날짜별 예측 가능한 경기 */}
         <section>
           <div className="mb-4 flex items-center gap-2">
-            <Calendar className="size-5 text-primary" />
-            <h2 className="text-xl font-semibold">예정된 경기</h2>
+            <Vote className="size-5 text-primary" />
+            <h2 className="text-xl font-semibold">예측 가능한 경기</h2>
           </div>
 
+          {/* 날짜 네비게이터 */}
+          <div className="glass mb-4 rounded-xl px-3 py-2">
+            <DateNav selected={selectedDate} />
+          </div>
+
+          {/* 선택 날짜 레이블 */}
+          <p className="mb-3 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <Calendar className="size-4" />
+            {selectedLabel}
+          </p>
+
+          {/* 경기 목록 */}
           <div className="space-y-3">
-            {upcomingMatches.length === 0 ? (
+            {openMatches.length === 0 ? (
               <div className="glass rounded-xl p-8 text-center text-muted-foreground">
-                예정된 경기가 없습니다
+                <p className="text-sm">이 날 예측 가능한 경기가 없습니다</p>
+                <p className="mt-1 text-xs opacity-60">날짜를 변경하거나 관리자에게 문의하세요</p>
               </div>
             ) : (
-              upcomingMatches.map((match) => (
-                <Link key={match.id} href={`/matches/${match.id}`}>
-                  <div className="glass rounded-xl p-4 transition-all hover:border-primary/40 hover:bg-white/8">
-                    <div className="mb-2 flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs">
-                        {getRoundLabel(match.round)}
-                        {match.group_name ? ` ${match.group_name}조` : ''}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {formatKickoff(match.kickoff_at)} KST
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-center gap-4 text-lg font-semibold">
-                      <span>{match.home_country_name}</span>
-                      <span className="text-sm text-muted-foreground">vs</span>
-                      <span>{match.away_country_name}</span>
-                    </div>
-                  </div>
-                </Link>
+              openMatches.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  prediction={myPredictions[match.id]}
+                />
               ))
             )}
           </div>
 
           <Button asChild variant="outline" className="mt-4 w-full">
-            <Link href="/matches">전체 경기 보기 →</Link>
+            <Link href="/matches">전체 경기 일정 보기 →</Link>
           </Button>
         </section>
 
-        {/* 현재 순위 TOP 3 */}
+        {/* TOP 3 */}
         <section>
           <div className="mb-4 flex items-center gap-2">
             <Trophy className="size-5 text-accent" />

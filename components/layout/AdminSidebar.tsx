@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Calendar, Users, Settings, ArrowLeft } from 'lucide-react'
+import { Calendar, Users, Settings, ArrowLeft, BellRing } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/admin/matches', label: '경기 관리', icon: Calendar },
   { href: '/admin/users', label: '참가자 관리', icon: Users },
   { href: '/admin/scoring', label: '점수 규칙', icon: Settings },
+  { href: '/admin/notices', label: '공지사항', icon: BellRing },
 ]
 
 export default function AdminSidebar() {

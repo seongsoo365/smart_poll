@@ -86,6 +86,15 @@ export const ROUND_LABELS: Record<Round, string> = {
 
 export const ROUNDS: Round[] = ['group', 'r32', 'r16', 'qf', 'sf', 'third_place', 'final']
 
+export type Notice = {
+  id: string
+  title: string
+  content: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 // 스코어로 승무패 자동 판별
 export function getWinnerFromScore(homeScore: number, awayScore: number): PredictedWinner {
   if (homeScore > awayScore) return 'home'

@@ -71,10 +71,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '이미 완료된 경기입니다' }, { status: 400 })
   }
 
-  // 마감 시간 계산 (prediction_locked_at 없으면 kickoff 시간)
+  // 마감 시간 계산 (prediction_locked_at 없으면 kickoff - 10분)
   const lockTime = match.prediction_locked_at
     ? new Date(match.prediction_locked_at)
-    : new Date(match.kickoff_at)
+    : new Date(new Date(match.kickoff_at).getTime() - 10 * 60 * 1000)
 
   if (lockTime <= new Date()) {
     return NextResponse.json({ error: '예측 마감 시간이 지났습니다' }, { status: 400 })

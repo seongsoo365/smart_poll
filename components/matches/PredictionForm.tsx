@@ -90,7 +90,7 @@ export default function PredictionForm({
     return (
       <div className="glass rounded-xl p-6 text-center">
         <p className="text-lg">🔒 예측 마감</p>
-        <p className="mt-1 text-sm text-muted-foreground">킥오프 10분 전 예측이 마감되었습니다</p>
+        <p className="mt-1 text-sm text-muted-foreground">킥오프 시간에 예측이 마감되었습니다</p>
         {initialPrediction && (
           <div className="mt-3 rounded-lg bg-white/5 p-3 text-sm">
             내 예측:{' '}

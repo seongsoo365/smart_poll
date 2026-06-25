@@ -9,6 +9,7 @@ import { ArrowLeft, Clock, MapPin, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   isMatchLocked,
+  getLockTime,
   formatKickoffKST,
   ROUND_LABELS,
   type Match,
@@ -17,9 +18,9 @@ import {
   type ScoringRules,
 } from '@/types'
 
-function TimeUntilLock({ lockedAt }: { lockedAt: string | null }) {
-  if (!lockedAt) return null
-  const diff = new Date(lockedAt).getTime() - Date.now()
+function TimeUntilLock({ match }: { match: Pick<Match, 'kickoff_at' | 'prediction_locked_at'> }) {
+  const lockTime = getLockTime(match)
+  const diff = lockTime.getTime() - Date.now()
   if (diff <= 0) return null
 
   const hours = Math.floor(diff / 3600000)
@@ -168,7 +169,7 @@ export default async function MatchDetailPage({
               {match.venue}
             </span>
           )}
-          <TimeUntilLock lockedAt={match.prediction_locked_at} />
+          <TimeUntilLock match={match} />
         </div>
       </div>
 

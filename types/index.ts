@@ -102,12 +102,19 @@ export function getWinnerFromScore(homeScore: number, awayScore: number): Predic
   return 'draw'
 }
 
-// prediction_locked_at이 없으면 kickoff - 1시간으로 계산
+// prediction_locked_at이 없으면 kickoff 시간 자체가 마감
 export function isMatchLocked(match: Pick<Match, 'kickoff_at' | 'prediction_locked_at'>): boolean {
   const lockTime = match.prediction_locked_at
     ? new Date(match.prediction_locked_at)
-    : new Date(new Date(match.kickoff_at).getTime() - 3600000)
+    : new Date(match.kickoff_at)
   return lockTime <= new Date()
+}
+
+// 마감 시각 반환 (prediction_locked_at 없으면 kickoff 시간)
+export function getLockTime(match: Pick<Match, 'kickoff_at' | 'prediction_locked_at'>): Date {
+  return match.prediction_locked_at
+    ? new Date(match.prediction_locked_at)
+    : new Date(match.kickoff_at)
 }
 
 export function formatKickoffKST(kickoffAt: string, options?: Intl.DateTimeFormatOptions) {

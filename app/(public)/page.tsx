@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { createClientSafe, supabaseConfigured } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { Calendar, Trophy, TrendingUp, Vote } from 'lucide-react'
+import { Calendar, Trophy, TrendingUp, Vote, ClipboardList } from 'lucide-react'
 import DateNav from '@/components/home/DateNav'
 import { type Match, type Prediction } from '@/types'
 import MatchCard from '@/components/matches/MatchCard'
+import MatchResultSummaryCard, { type MatchResultStats } from '@/components/matches/MatchResultSummaryCard'
 
 const TOURNAMENT_START = '2026-06-11'
 const TOURNAMENT_END = '2026-07-19'
@@ -35,7 +36,6 @@ export default async function HomePage({
         ? today
         : TOURNAMENT_START
 
-  // 선택된 KST 날짜 → UTC 범위
   const dayStartUTC = new Date(selectedDate + 'T00:00:00+09:00').toISOString()
   const dayEndUTC   = new Date(selectedDate + 'T23:59:59+09:00').toISOString()
 
@@ -44,9 +44,16 @@ export default async function HomePage({
   let openMatches: Match[] = []
   let myPredictions: Record<string, Prediction> = {}
   let topRankings: RankEntry[] = []
+  let completedMatches: Match[] = []
+  const resultStatsMap: Record<string, MatchResultStats> = {}
 
   if (supabase) {
-    const [{ data: matchData }, predData] = await Promise.all([
+    const [
+      { data: matchData },
+      predData,
+      { data: completedData },
+      { data: rulesData },
+    ] = await Promise.all([
       supabase
         .from('matches')
         .select('*')
@@ -59,9 +66,23 @@ export default async function HomePage({
         .from('predictions')
         .select('user_id, points_earned, user_profiles(name)')
         .not('points_earned', 'is', null),
+
+      // 최근 완료된 경기 5개
+      supabase
+        .from('matches')
+        .select('*')
+        .eq('status', 'completed')
+        .order('kickoff_at', { ascending: false })
+        .limit(5),
+
+      supabase
+        .from('scoring_rules')
+        .select('rule_type, points')
+        .eq('is_active', true),
     ])
 
     openMatches = (matchData ?? []) as Match[]
+    completedMatches = (completedData ?? []) as Match[]
 
     // 로그인 사용자의 내 예측 조회
     const { data: { user } } = await supabase.auth.getUser()
@@ -96,6 +117,29 @@ export default async function HomePage({
     topRankings = Object.values(rankMap)
       .sort((a, b) => b.total_points - a.total_points || b.correct_count - a.correct_count)
       .slice(0, 3)
+
+    // 경기별 1등/2등/3등 집계
+    if (completedMatches.length > 0) {
+      const winnerPts = (rulesData ?? []).find((r) => r.rule_type === 'winner')?.points ?? 3
+      const exactPts  = (rulesData ?? []).find((r) => r.rule_type === 'exact_score')?.points ?? 7
+      const maxPts    = winnerPts + exactPts
+
+      const { data: resultPreds } = await supabase
+        .from('predictions')
+        .select('match_id, points_earned')
+        .in('match_id', completedMatches.map((m) => m.id))
+        .not('points_earned', 'is', null)
+
+      for (const p of resultPreds ?? []) {
+        if (!resultStatsMap[p.match_id]) {
+          resultStatsMap[p.match_id] = { first: 0, second: 0, third: 0, total: 0 }
+        }
+        resultStatsMap[p.match_id].total++
+        if (p.points_earned === maxPts) resultStatsMap[p.match_id].first++
+        else if (p.points_earned === winnerPts) resultStatsMap[p.match_id].second++
+        else resultStatsMap[p.match_id].third++
+      }
+    }
   }
 
   const medals = ['🥇', '🥈', '🥉']
@@ -130,18 +174,15 @@ export default async function HomePage({
             <h2 className="text-xl font-semibold">예측 가능한 경기</h2>
           </div>
 
-          {/* 날짜 네비게이터 */}
           <div className="glass mb-4 rounded-xl px-3 py-2">
             <DateNav selected={selectedDate} />
           </div>
 
-          {/* 선택 날짜 레이블 */}
           <p className="mb-3 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
             <Calendar className="size-4" />
             {selectedLabel}
           </p>
 
-          {/* 경기 목록 */}
           <div className="space-y-3">
             {openMatches.length === 0 ? (
               <div className="glass rounded-xl p-8 text-center text-muted-foreground">
@@ -202,6 +243,31 @@ export default async function HomePage({
           </Button>
         </section>
       </div>
+
+      {/* 최근 완료 경기 결과 */}
+      {completedMatches.length > 0 && (
+        <section className="mt-10">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="size-5 text-primary" />
+              <h2 className="text-xl font-semibold">최근 경기 결과</h2>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/matches">전체 보기 →</Link>
+            </Button>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {completedMatches.map((match) => (
+              <MatchResultSummaryCard
+                key={match.id}
+                match={match}
+                stats={resultStatsMap[match.id] ?? { first: 0, second: 0, third: 0, total: 0 }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

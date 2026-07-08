@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Calendar, Trophy, User } from 'lucide-react'
+import { Home, Calendar, Trophy, User, Flag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/', label: '홈', icon: Home, exact: true },
   { href: '/matches', label: '경기', icon: Calendar, exact: false },
   { href: '/rankings', label: '순위', icon: Trophy, exact: false },
+  { href: '/final-prediction', label: '결승예측', icon: Flag, exact: false },
   { href: '/my-predictions', label: '내 예측', icon: User, exact: false },
 ]
 

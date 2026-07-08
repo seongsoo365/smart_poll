@@ -95,6 +95,45 @@ export type Notice = {
   updated_at: string
 }
 
+export type FinalPredictionEvent = {
+  id: string
+  lock_at: string
+  is_open: boolean
+  points_one_correct: number
+  points_both_correct: number
+  actual_country_code_1: string | null
+  actual_country_name_1: string | null
+  actual_country_code_2: string | null
+  actual_country_name_2: string | null
+  graded_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type FinalPrediction = {
+  id: string
+  user_id: string
+  predicted_country_code_1: string
+  predicted_country_name_1: string
+  predicted_country_code_2: string
+  predicted_country_name_2: string
+  points_earned: number | null
+  created_at: string
+  updated_at: string
+}
+
+export type FinalPredictionWithUser = FinalPrediction & {
+  user_profiles: {
+    name: string
+    avatar_url: string | null
+  } | null
+}
+
+export type CountryOption = {
+  code: string
+  name: string
+}
+
 // 스코어로 승무패 자동 판별
 export function getWinnerFromScore(homeScore: number, awayScore: number): PredictedWinner {
   if (homeScore > awayScore) return 'home'
@@ -112,6 +151,11 @@ export function getLockTime(match: Pick<Match, 'kickoff_at' | 'prediction_locked
   return match.prediction_locked_at
     ? new Date(match.prediction_locked_at)
     : new Date(match.kickoff_at)
+}
+
+// 결승 진출국 예측 마감 여부
+export function isFinalPredictionLocked(event: Pick<FinalPredictionEvent, 'lock_at'>): boolean {
+  return new Date(event.lock_at) <= new Date()
 }
 
 export function formatKickoffKST(kickoffAt: string, options?: Intl.DateTimeFormatOptions) {

@@ -45,6 +45,12 @@ export default async function Header() {
           >
             순위
           </Link>
+          <Link
+            href="/final-prediction"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            결승 예측
+          </Link>
           {userName && (
             <Link
               href="/my-predictions"

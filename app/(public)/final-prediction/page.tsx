@@ -55,30 +55,31 @@ export default async function FinalPredictionPage() {
       myPrediction = (pred as FinalPrediction | null) ?? undefined
     }
 
-    if (event?.graded_at) {
+    if (event) {
       const { data: allPreds } = await supabase
         .from('final_predictions')
         .select('user_id, predicted_country_name_1, predicted_country_name_2, points_earned, user_profiles(name)')
-        .not('points_earned', 'is', null)
 
-      rankEntries = ((allPreds ?? []) as unknown as Array<{
+      const mapped = ((allPreds ?? []) as unknown as Array<{
         user_id: string
         predicted_country_name_1: string
         predicted_country_name_2: string
-        points_earned: number
+        points_earned: number | null
         user_profiles: { name: string } | { name: string }[] | null
-      }>)
-        .map((row) => {
-          const profile = Array.isArray(row.user_profiles) ? row.user_profiles[0] : row.user_profiles
-          return {
-            user_id: row.user_id,
-            name: profile?.name ?? '알 수 없음',
-            country_name_1: row.predicted_country_name_1,
-            country_name_2: row.predicted_country_name_2,
-            points_earned: row.points_earned,
-          }
-        })
-        .sort((a, b) => b.points_earned - a.points_earned)
+      }>).map((row) => {
+        const profile = Array.isArray(row.user_profiles) ? row.user_profiles[0] : row.user_profiles
+        return {
+          user_id: row.user_id,
+          name: profile?.name ?? '알 수 없음',
+          country_name_1: row.predicted_country_name_1,
+          country_name_2: row.predicted_country_name_2,
+          points_earned: row.points_earned,
+        }
+      })
+
+      rankEntries = event.graded_at
+        ? mapped.sort((a, b) => (b.points_earned ?? 0) - (a.points_earned ?? 0))
+        : mapped.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
     }
   }
 
@@ -113,7 +114,9 @@ export default async function FinalPredictionPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-lg font-semibold">스팟 이벤트 랭킹</h2>
+            <h2 className="mb-3 text-lg font-semibold">
+              {event.graded_at ? '스팟 이벤트 랭킹' : '회원 예측 현황'}
+            </h2>
             <FinalPredictionRanking event={event} entries={rankEntries} />
           </section>
         </div>

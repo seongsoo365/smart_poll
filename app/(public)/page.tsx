@@ -3,12 +3,9 @@ import { createClientSafe, supabaseConfigured } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Calendar, Trophy, TrendingUp, Vote, ClipboardList } from 'lucide-react'
 import DateNav from '@/components/home/DateNav'
-import { type Match, type Prediction } from '@/types'
+import { type Match, type Prediction, TOURNAMENT_START, TOURNAMENT_END } from '@/types'
 import MatchCard from '@/components/matches/MatchCard'
 import MatchResultSummaryCard, { type MatchResultStats } from '@/components/matches/MatchResultSummaryCard'
-
-const TOURNAMENT_START = '2026-06-11'
-const TOURNAMENT_END = '2026-07-20'
 
 function todayKST(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10)

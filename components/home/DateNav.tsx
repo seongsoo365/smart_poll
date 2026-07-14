@@ -3,9 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const TOURNAMENT_START = '2026-06-11'
-const TOURNAMENT_END = '2026-07-20'
+import { TOURNAMENT_START, TOURNAMENT_END } from '@/types'
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T12:00:00Z')

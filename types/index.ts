@@ -86,6 +86,10 @@ export const ROUND_LABELS: Record<Round, string> = {
 
 export const ROUNDS: Round[] = ['group', 'r32', 'r16', 'qf', 'sf', 'third_place', 'final']
 
+// 대회 기간 (KST 기준, YYYY-MM-DD)
+export const TOURNAMENT_START = '2026-06-11'
+export const TOURNAMENT_END = '2026-07-20'
+
 export type Notice = {
   id: string
   title: string

@@ -8,7 +8,7 @@ import MatchCard from '@/components/matches/MatchCard'
 import MatchResultSummaryCard, { type MatchResultStats } from '@/components/matches/MatchResultSummaryCard'
 
 const TOURNAMENT_START = '2026-06-11'
-const TOURNAMENT_END = '2026-07-19'
+const TOURNAMENT_END = '2026-07-20'
 
 function todayKST(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10)
